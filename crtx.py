@@ -4,8 +4,6 @@ import requests
 import time
 import json
 
-
-
 def bot(msg):
     text = msg
     bot_token = "Token"
