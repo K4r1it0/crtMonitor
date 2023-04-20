@@ -1,8 +1,10 @@
 import schedule
-import telegram
-import requests
 import time
-import json
+import requests, json
+import asyncio
+import telepot
+import datetime
+
 
 def bot(msg):
     text = msg
@@ -59,7 +61,7 @@ class crtshAPI(object):
                 except Exception as err:
                     print("Error retrieving information.")
             else:
-                print(f"Request Status is {req.status_code} trying again after 10 seconds")
+                print(f"Request Status is {req.status_code} trying again after 60 seconds")
                 time.sleep(10)
                 continue
 
@@ -69,25 +71,28 @@ class crtshAPI(object):
 def monitor(query):
     print("Monitor Task Started")
     for cert in crtshAPI().search(query):
-        if cert['serial_number'] not in certs:
+        print("test")
+        if cert['serial_number'] not in certs and datetime.datetime.strptime(cert['entry_timestamp'], "%Y-%m-%dT%H:%M:%S.%f") > datetime.datetime.strptime(current_date, "%Y-%m-%dT%H:%M:%S.%f"):
             certs.add(cert['serial_number'])
             bot(str(cert))
             print(cert)
 
 
 status = "Store"
-query = "Fidelity National Information Services, Inc"
+#query = "Fidelity National Information Services, Inc"
+query = "Hydrasec.io"
+current_date = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")
 certs = set()
 
 
 if status == "Store":
     print("Entreing Storing Mode")
     for cert in crtshAPI().search(query):
-        certs.add(cert['serial_number'])
-        status = "Monitor"
-        print("Exiting Storing Mode")
-        schedule.every(6).hours.do(monitor,query)
-        while True:
-            schedule.run_pending()
-            time.sleep(1)
-
+        if datetime.datetime.strptime(cert['entry_timestamp'], "%Y-%m-%dT%H:%M:%S.%f") <= datetime.datetime.strptime(current_date, "%Y-%m-%dT%H:%M:%S.%f"):
+            certs.add(cert['serial_number'])
+    status = "Monitor"
+    print("Exiting Storing Mode")
+    schedule.every(1).hours.do(monitor,query)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
